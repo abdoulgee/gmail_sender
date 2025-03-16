@@ -1,0 +1,12 @@
+Flask==3.0.2
+pyppeteer==1.0.2
+cryptography==42.0.5
+gunicorn==21.2.0
+flask-cors==4.0.0
+requests==2.31.0
+csv
+hashlib
+asyncio
+random
+
+
