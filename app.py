@@ -10,7 +10,7 @@ import base64
 import hashlib
 from cryptography.fernet import Fernet
 import os  # Add this at the top
-
+os.environ['PYPPETEER_SKIP_DOWNLOAD'] = 'true'
 # Change secret key line to:
 secret_key = os.getenv("SECRET_KEY", "50001")  # Default for testing
 
