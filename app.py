@@ -241,45 +241,62 @@ sending_thread = None
 
 @app.route('/click-compose', methods=['POST'])
 def click_compose():
-    # In app.py's click-compose endpoint
-    from urllib.parse import urlparse
-# Validate WS URL format
-    if not urlparse(ws_url).scheme.startswith('ws'):
-        return jsonify({"error": "Invalid WebSocket URL"}), 400
-    
-
     global sending_thread, email_limit, delay_seconds, stop_flag
-    if sending_thread and sending_thread.is_alive():
-        return jsonify({"message": "Email sending is already running"}), 400
-    stop_flag = False  # Reset stop flag when starting new process
 
+    # Get data from request first
     data = request.json
-    ws_url = data.get("wsUrl")  # Get WS URL from request
+    ws_url = data.get("wsUrl")  # Retrieve ws_url here
     url = data.get("url")
     subjectlines = data.get('subjectlines')
     messagebodys = data.get('messagebodys')
-    email_limit = int(data.get('emailLimit'))  # email_limit is now also needed_emails
+    email_limit = int(data.get('emailLimit', 0))
     delay_seconds = int(data.get('delaySeconds', 0)) * 60
-    print(f"Delay set to: {delay_seconds} seconds")
 
+    # Validate required fields
+    if not ws_url:
+        return jsonify({"error": "WebSocket URL is required"}), 400
     if not url:
-        return jsonify({"error": "URL is required"}), 400
-    if not subjectlines or not messagebodys or not email_limit:
-        return jsonify({"error": "Subject lines, message bodies, email limit and sending minutes are required"}), 400
+        return jsonify({"error": "Gmail URL is required"}), 400
+    if not subjectlines or not messagebodys or email_limit <= 0:
+        return jsonify({"error": "Subject lines, message bodies, and valid email limit are required"}), 400
 
-    sending_thread = threading.Thread(target=run_email_sending, args=(ws_url, url, subjectlines, messagebodys, email_limit, delay_seconds))
+    # Validate WebSocket URL format
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(ws_url)
+        if not parsed.scheme.startswith('ws'):
+            return jsonify({"error": "Invalid WebSocket URL scheme"}), 400
+    except Exception as e:
+        return jsonify({"error": f"Invalid URL format: {str(e)}"}), 400
+
+    # Check if already running
+    if sending_thread and sending_thread.is_alive():
+        return jsonify({"message": "Email sending is already running"}), 400
+
+    stop_flag = False  # Reset flag
+    print(f"Starting with WS URL: {ws_url}")
+
+    # Start thread with correct argument order
+    sending_thread = threading.Thread(
+        target=run_email_sending,
+        args=(ws_url, url, subjectlines, messagebodys, email_limit, delay_seconds)
+    )
     sending_thread.start()
     return jsonify({"message": "Email sending started in the background"})
 
-def run_email_sending(url, subjectlines, messagebodys, email_limit, delay_seconds):
+
+def run_email_sending(ws_url, url, subjectlines, messagebodys, email_limit, delay_seconds):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        result = loop.run_until_complete(open_and_click(url, subjectlines, messagebodys, email_limit, delay_seconds))
-        print(result)
+        result = loop.run_until_complete(
+            open_and_click(ws_url, url, subjectlines, messagebodys, email_limit, delay_seconds)
+        )
+        print("Result:", result)
+    except Exception as e:
+        print("Critical error in email sending:", str(e))
     finally:
         loop.close()
-
 
 # Add this endpoint
 @app.route('/stop', methods=['POST'])
