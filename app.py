@@ -187,13 +187,17 @@ def remove_sent_email(email_to_remove):
 
 async def open_and_click(ws_url, url, subjectlines, messagebodys, email_limit, delay_seconds):
     global sent_count, current_page, current_browser, stop_flag
-    stop_flag = False  # Reset flag when starting
-    #browser_ws_endpoint = await get_browser_ws_endpoint()
-    current_browser = await connect(browserWSEndpoint=ws_url, defaultViewport=None,  ignoreHTTPSErrors=True)
-    current_page = await current_browser.newPage()
-
+    print(f"Connecting to browser at: {ws_url}")  # <-- ADD
+    
     try:
-        await current_page.goto(url, timeout=600000)
+        current_browser = await connect(browserWSEndpoint=ws_url, defaultViewport=None, ignoreHTTPSErrors=True)
+        print("Browser connected!")  # <-- ADD
+        current_page = await current_browser.newPage()
+        print("New page created!")  # <-- ADD
+
+        await current_page.goto(url, timeout=60000)
+        print(f"Navigated to: {url}")  # <-- ADD
+        # ... rest of the function ...
         sent_count = 0
 
         while sent_count < email_limit and not stop_flag:
@@ -285,16 +289,16 @@ def click_compose():
     return jsonify({"message": "Email sending started in the background"})
 
 
+# Replace run_email_sending function with:
 def run_email_sending(ws_url, url, subjectlines, messagebodys, email_limit, delay_seconds):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        result = loop.run_until_complete(
+        loop.run_until_complete(
             open_and_click(ws_url, url, subjectlines, messagebodys, email_limit, delay_seconds)
         )
-        print("Result:", result)
     except Exception as e:
-        print("Critical error in email sending:", str(e))
+        print(f"Critical error: {str(e)}")
     finally:
         loop.close()
 
