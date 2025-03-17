@@ -26,7 +26,7 @@ def is_valid_ws_url(url):
         result = urlparse(url)
         return all([
             result.scheme in ['ws', 'wss'],
-            result.hostname in ['localhost', '127.0.0.1'],
+            #result.hostname in ['localhost', '127.0.0.1'],
             result.port in range(9222, 9333)  # Common debug ports
         ])
     except:
@@ -59,10 +59,6 @@ delay_seconds = 0
 stop_event = threading.Event()
 current_browser = None
 
-async def get_browser_ws_endpoint():
-    import requests
-    response = requests.get("http://localhost:9222/json/version")
-    return response.json()['webSocketDebuggerUrl']
 
 # Simulate human-like typing
 async def simulate_human_typing(element, text):
