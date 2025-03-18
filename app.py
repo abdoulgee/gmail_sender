@@ -71,6 +71,7 @@ sent_count_lock = Lock()
 email_limit_lock = Lock()
 sent_count = 0
 email_limit = 0
+sending_thread = None
 
 # Simulate human-like typing
 async def simulate_human_typing(element, text):
@@ -246,6 +247,7 @@ async def open_and_click(ws_url, url, subjectlines, messagebodys, email_limit, d
 
 @app.route('/get-sent-count', methods=['GET'])
 def get_sent_count():
+    app.logger.info("get_sent_count called")
     try:
         with sent_count_lock, email_limit_lock:
             return jsonify({
@@ -256,7 +258,7 @@ def get_sent_count():
         app.logger.error(f"Error in get_sent_count: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-sending_thread = None
+#sending_thread = None
 
 @app.route('/click-compose', methods=['POST'])
 def click_compose():
