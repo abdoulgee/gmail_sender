@@ -262,7 +262,7 @@ def get_sent_count():
 
 @app.route('/click-compose', methods=['POST'])
 def click_compose():
-    global sending_thread, email_limit, delay_seconds, stop_flag
+    global sending_thread, email_limit, delay_seconds, stop_flag, sent_count
 
     # Get data from request first
     with email_limit_lock:
