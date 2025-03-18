@@ -10,7 +10,10 @@ import base64
 import hashlib
 from cryptography.fernet import Fernet
 import os  # Add this at the top
+
+from flask import Flask, jsonify
 from threading import Lock
+
 
 os.environ['PYPPETEER_SKIP_DOWNLOAD'] = 'true'
 # Change secret key line to:
@@ -243,11 +246,15 @@ async def open_and_click(ws_url, url, subjectlines, messagebodys, email_limit, d
 
 @app.route('/get-sent-count', methods=['GET'])
 def get_sent_count():
-    with sent_count_lock, email_limit_lock:
-        return jsonify({
-            "sentCount": sent_count,
-            "totalCount": email_limit
-        })
+    try:
+        with sent_count_lock, email_limit_lock:
+            return jsonify({
+                "sentCount": sent_count,
+                "totalCount": email_limit
+            })
+    except Exception as e:
+        app.logger.error(f"Error in get_sent_count: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 sending_thread = None
 
