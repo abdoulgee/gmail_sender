@@ -265,10 +265,12 @@ def click_compose():
     global sending_thread, email_limit, delay_seconds, stop_flag, sent_count
 
     # Get data from request first
+    data = request.json  # Define data before using it
+
     with email_limit_lock:
         email_limit = int(data.get('emailLimit', 0))
-    data = request.json
-    ws_url = data.get("wsUrl")  # Retrieve ws_url here
+
+    ws_url = data.get("wsUrl")
     url = data.get("url")
     subjectlines = data.get('subjectlines')
     messagebodys = data.get('messagebodys')
