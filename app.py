@@ -10,12 +10,17 @@ import base64
 import hashlib
 from cryptography.fernet import Fernet
 import os  # Add this at the top
+from threading import Lock
+
 os.environ['PYPPETEER_SKIP_DOWNLOAD'] = 'true'
 # Change secret key line to:
 secret_key = os.getenv("SECRET_KEY", "50001")  # Default for testing
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*", "supports_credentials": True}})
+C# Remove supports_credentials=True
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+
 
 
 # In app.py
@@ -53,12 +58,13 @@ csv_reader = csv.reader(csv_file)
 decrypted_csv = [row for row in csv_reader]
 
 # Global variables to track email sending
-sent_count = 0
-email_limit = 0  # Will also serve as needed_emails
+
 delay_seconds = 0
 stop_event = threading.Event()
 current_browser = None
-
+# Add these after global variables
+sent_count_lock = Lock()
+email_limit_lock = Lock()
 
 # Simulate human-like typing
 async def simulate_human_typing(element, text):
@@ -194,7 +200,8 @@ async def open_and_click(ws_url, url, subjectlines, messagebodys, email_limit, d
         await current_page.goto(url, timeout=60000)
         print(f"Navigated to: {url}")  # <-- ADD
         # ... rest of the function ...
-        sent_count = 0
+        with sent_count_lock:
+            sent_count = 0
 
         while sent_count < email_limit and not stop_flag:
             email = get_next_email()
@@ -206,9 +213,10 @@ async def open_and_click(ws_url, url, subjectlines, messagebodys, email_limit, d
             try:
                 success = await send_single_email(current_page, email, subjectlines, messagebodys)
                 if success:
-                    sent_count += 1
-                    remove_sent_email(email)  # Ensure it's removed immediately after sending
-                    print(f"Total emails sent: {sent_count}")
+                    with sent_count_lock:
+                        sent_count += 1
+                        remove_sent_email(email)  # Ensure it's removed immediately after sending
+                        print(f"Total emails sent: {sent_count}")
 
                     if delay_seconds > 0 and not stop_flag:
                         print(f"Waiting {delay_seconds} seconds before next email...")
@@ -232,10 +240,11 @@ async def open_and_click(ws_url, url, subjectlines, messagebodys, email_limit, d
 
 @app.route('/get-sent-count', methods=['GET'])
 def get_sent_count():
-    return jsonify({
-        "sentCount": sent_count,
-        "totalCount": email_limit
-    })
+    with sent_count_lock, email_limit_lock:
+        return jsonify({
+            "sentCount": sent_count,
+            "totalCount": email_limit
+        })
 
 sending_thread = None
 
@@ -244,12 +253,13 @@ def click_compose():
     global sending_thread, email_limit, delay_seconds, stop_flag
 
     # Get data from request first
+    with email_limit_lock:
+        email_limit = int(data.get('emailLimit', 0))
     data = request.json
     ws_url = data.get("wsUrl")  # Retrieve ws_url here
     url = data.get("url")
     subjectlines = data.get('subjectlines')
     messagebodys = data.get('messagebodys')
-    email_limit = int(data.get('emailLimit', 0))
     delay_seconds = int(data.get('delaySeconds', 0)) * 60
 
     # Validate required fields
