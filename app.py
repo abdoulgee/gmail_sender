@@ -59,12 +59,15 @@ decrypted_csv = [row for row in csv_reader]
 
 # Global variables to track email sending
 
+# Global variables to track email sending
 delay_seconds = 0
 stop_event = threading.Event()
 current_browser = None
 # Add these after global variables
 sent_count_lock = Lock()
 email_limit_lock = Lock()
+sent_count = 0
+email_limit = 0
 
 # Simulate human-like typing
 async def simulate_human_typing(element, text):
