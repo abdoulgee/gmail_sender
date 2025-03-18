@@ -17,7 +17,7 @@ os.environ['PYPPETEER_SKIP_DOWNLOAD'] = 'true'
 secret_key = os.getenv("SECRET_KEY", "50001")  # Default for testing
 
 app = Flask(__name__)
-C# Remove supports_credentials=True
+# Remove supports_credentials=True
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 
